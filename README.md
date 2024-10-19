@@ -14,14 +14,12 @@ python src/datagenerator.py --seed 123 --num_events 100
 
 ## Testing
 
-You can run the tests directly or use the run_tests.py file
-
-```
-PYTHONPATH=src python -m unittest discover -s tests
-``` 
-
-or
+You can run the tests using run_tests.py file or by calling `unittest` directly.
 
 ```
 python run_tests.py
+```
+or
+```
+PYTHONPATH=src python -m unittest discover -s tests
 ```

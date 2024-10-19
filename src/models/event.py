@@ -1,7 +1,7 @@
 """Module providing the base Event Class."""
 
-from helpers.accountdatagenerator import AccountDataGenerator
-from helpers.transactiondatagenerator import TransactionDataGenerator
+from utils.account_data_generator import AccountDataGenerator
+from utils.transaction_data_generator import TransactionDataGenerator
 
 class Event(
     AccountDataGenerator,

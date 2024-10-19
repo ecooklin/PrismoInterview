@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from datetime import datetime, timedelta
 
 from faker import Faker
@@ -17,9 +18,10 @@ class DataGenerator:
         seed (int): The seed to use for Faker - default 0
         num_data_points (int): Number of data points to generate
     """
-    def __init__(self, seed: int, num_events: int = 10):
+    def __init__(self, seed: int, base_path: str, num_events: int = 10):
         self.seed = seed
         self.num_events = num_events
+        self.base_path = base_path
         self.out = []
         self.domain_provider = DynamicProvider(
             provider_name="domain",
@@ -61,9 +63,10 @@ class DataGenerator:
             time = time + timedelta(seconds=self.fake.random_int(min=1,max=120))
 
     def write_data(self) -> None:
-        """Writes the array of events to a file"""
+        """Checks for the base path and writes the array of events to a file"""
         try:
-            with open("events.json", "w", encoding="utf-8") as f:
+            os.makedirs(os.path.dirname(self.base_path), exist_ok=True)
+            with open(self.base_path + "events.json", mode="w", encoding="utf-8") as f:
                 f.write("\n".join(map(json.dumps, self.out)))
         except IOError as e:
             print(f"Error writing to file: {e}")
@@ -74,12 +77,13 @@ class DataGenerator:
 
 if __name__ == "__main__":
     parser  = argparse.ArgumentParser()
-    parser.add_argument("-s", "--seed", type=int, default=0, help="Which seed to use for generating random data")
-    parser.add_argument("-n", "--num_events", type=int, default=10, help="How many event to generate")
-    parser.add_argument("-w", "--write_data", default=False, help="Flag to write data or not")
+    parser.add_argument("-s", "--seed", type=int, default=0, help="Which seed to use for generating random data", required=False)
+    parser.add_argument("-n", "--num-events", type=int, default=10, help="How many event to generate", required=False)
+    parser.add_argument("-w", "--write-data", default=False, help="Flag to write data or not", required=False)
+    parser.add_argument("-b", "--base-path", default="data/raw_events/", help="Base path to write data to", required=False)
     flags = parser.parse_args()
 
-    data_generator = DataGenerator(seed=flags.seed, num_events=flags.num_events)
+    data_generator = DataGenerator(seed=flags.seed, base_path=flags.base_path, num_events=flags.num_events)
     data_generator.generate_data()
     if flags.write_data:
         data_generator.write_data()
