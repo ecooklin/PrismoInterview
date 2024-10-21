@@ -9,10 +9,10 @@ class Event(
 ):
     "Class representing an Event"
     def __init__(self,
-                 event_id=None,
-                 timestamp=None,
-                 domain=None,
-                 event_type=None,
+                 event_id: str = None,
+                 timestamp: str = None,
+                 domain: str = None,
+                 event_type: str = None,
                  ):
         self.event_id = event_id
         self.timestamp = timestamp

@@ -1,3 +1,5 @@
+"""Module containing the flattened event schemas"""
+
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, LongType, TimestampType
 
 class EventSchemas:

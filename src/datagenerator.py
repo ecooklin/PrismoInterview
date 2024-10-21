@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import os
 from datetime import datetime, timedelta
 
@@ -9,6 +10,12 @@ from faker import Faker
 from faker.providers import DynamicProvider
 
 from models.event import Event
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
+logger = logging.getLogger(__name__)
 
 class DataGenerator:
     """
@@ -43,6 +50,7 @@ class DataGenerator:
 
     def generate_data(self) -> None:
         """Main function to generate faked data"""
+        logger.info("Generating data")
         time = datetime(2024,10,10,10,10)
         for _ in range(self.num_events):
             domain = self.fake.domain()
@@ -57,23 +65,21 @@ class DataGenerator:
                 timestamp=time.isoformat(),
                 domain=domain,
                 event_type=event_type
-            )
-            print(e.__dict__)
+                )
+            logger.debug(e.__dict__)
             self.out.append(e.__dict__)
             time = time + timedelta(seconds=self.fake.random_int(min=1,max=120))
 
     def write_data(self) -> None:
         """Checks for the base path and writes the array of events to a file"""
+        logger.info("Writing Data")
         try:
             os.makedirs(os.path.dirname(self.base_path), exist_ok=True)
             with open(self.base_path + "events.json", mode="w", encoding="utf-8") as f:
                 f.write("\n".join(map(json.dumps, self.out)))
         except IOError as e:
-            print(f"Error writing to file: {e}")
+            logger.error("Error writing to file: %s", e)
 
-    def print_stuff(self):
-        """For testing unittest"""
-        return "hello"
 
 if __name__ == "__main__":
     parser  = argparse.ArgumentParser()
@@ -82,8 +88,12 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--write-data", default=False, help="Flag to write data or not", required=False)
     parser.add_argument("-b", "--base-path", default="data/raw_events/", help="Base path to write data to", required=False)
     flags = parser.parse_args()
+    logger.debug(flags)
 
-    data_generator = DataGenerator(seed=flags.seed, base_path=flags.base_path, num_events=flags.num_events)
+    data_generator = DataGenerator(seed=flags.seed,
+                                   base_path=flags.base_path,
+                                   num_events=flags.num_events
+                                )
     data_generator.generate_data()
     if flags.write_data:
         data_generator.write_data()

@@ -72,5 +72,5 @@ if __name__ == "__main__":
     else:
         final_df = df
     if flags.target_path:
-        path = os.path.join(flags.target_path, e.create_date_path(flags.date))
+        path = os.path.join(flags.target_path, e.create_date_path(flags.date), flags.event_type)
         e.write_event_dataframe(final_df, path=path)
