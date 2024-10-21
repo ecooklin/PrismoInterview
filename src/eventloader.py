@@ -12,6 +12,13 @@ from models.event_schemas import EventSchemas
 from utils.spark_utils import SparkUtils
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
+logger = logging.getLogger(__name__)
+
+
 class EventLoader(SparkUtils):
     """Event Loader Class"""
     def __init__(self):
@@ -23,6 +30,7 @@ class EventLoader(SparkUtils):
     def create_date_path(self, date: str):
         """Creates date path structure like year/month/date based on target dates"""
         d = datetime.strptime(date, "%Y-%m-%d")
+        logger.debug(d.strftime("%Y/%m/%d/"))
         return d.strftime("%Y/%m/%d/")
 
     def filter_date(self, df: DataFrame, date: str, timestamp_col: str = "timestamp"):
@@ -32,6 +40,7 @@ class EventLoader(SparkUtils):
     def get_schema(self, domain: str) -> StructType:
         """Returns the appropriate flat schema for the provided domain"""
         es = EventSchemas()
+        logger.debug(domain)
         if domain == "account":
             return es.get_account_schema()
         if domain == "transaction":
@@ -40,13 +49,15 @@ class EventLoader(SparkUtils):
 
     def read_events(self, path: str, domain: str = None, event_type: str = None) -> DataFrame:
         """Reads JSON file from the provided path"""
+        logger.info("Reading data from path: %s", path)
         if event_type:
             return self.spark.read.json(path).filter((col("event_type") == event_type) & (col("domain") == domain))
         return self.spark.read.json(path)
 
     def write_event_dataframe(self, df: DataFrame, path: str) -> None:
         """Writes df to a provided path"""
-        df.write.parquet(path=path)
+        logger.info("Writing parquet data to: %s", path)
+        df.write.mode("overwrite").parquet(path=path)
 
 
 if __name__ == "__main__":
@@ -72,5 +83,5 @@ if __name__ == "__main__":
     else:
         final_df = df
     if flags.target_path:
-        path = os.path.join(flags.target_path, e.create_date_path(flags.date))
+        path = os.path.join(flags.target_path, e.create_date_path(flags.date), flags.event_type)
         e.write_event_dataframe(final_df, path=path)
