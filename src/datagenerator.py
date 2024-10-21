@@ -73,9 +73,11 @@ class DataGenerator:
     def write_data(self) -> None:
         """Checks for the base path and writes the array of events to a file"""
         logger.info("Writing Data")
+        logger.debug(self.base_path)
         try:
             os.makedirs(os.path.dirname(self.base_path), exist_ok=True)
-            with open(self.base_path + "events.json", mode="w", encoding="utf-8") as f:
+            file = os.path.join(self.base_path, "events.json")
+            with open(file, mode="w", encoding="utf-8") as f:
                 f.write("\n".join(map(json.dumps, self.out)))
         except IOError as e:
             logger.error("Error writing to file: %s", e)
@@ -85,8 +87,8 @@ if __name__ == "__main__":
     parser  = argparse.ArgumentParser()
     parser.add_argument("-s", "--seed", type=int, default=0, help="Which seed to use for generating random data", required=False)
     parser.add_argument("-n", "--num-events", type=int, default=10, help="How many event to generate", required=False)
-    parser.add_argument("-w", "--write-data", default=False, help="Flag to write data or not", required=False)
-    parser.add_argument("-b", "--base-path", default="data/raw_events/", help="Base path to write data to", required=False)
+    parser.add_argument("-w", "--write-data", type=bool, default=False, help="Flag to write data or not", required=False)
+    parser.add_argument("-b", "--base-path", type=str, default="data/raw_events/", help="Base path to write data to", required=False)
     flags = parser.parse_args()
     logger.debug(flags)
 
