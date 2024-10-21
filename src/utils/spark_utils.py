@@ -19,12 +19,11 @@ class SparkUtils:
         Returns:
             DataFrame: Flattened dataframe
         """
-        def flatten_struct_fields(inner_df: DataFrame):
+        def flatten_struct_fields(inner_df: DataFrame) -> DataFrame:
             flat_cols = []
             nested_cols = []
 
             for field in inner_df.schema.fields:
-
                 if isinstance(field.dataType, StructType):
                     for nested_field in field.dataType.fields:
                         nested_cols.append(col(f"{field.name}.{nested_field.name}")

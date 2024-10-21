@@ -2,9 +2,15 @@
 from dataclasses import dataclass
 
 from faker import Faker
+from faker.providers import DynamicProvider
 
 
 fake = Faker()
+status_provider = DynamicProvider(
+            provider_name="status",
+            elements=["OPEN", "CLOSED", "PENDING", "SUSPENDED"]
+        )
+fake.add_provider(status_provider)
 
 @dataclass
 class AccountDataGenerator():
@@ -28,8 +34,8 @@ class AccountDataGenerator():
         if event_type == "status-change":
             return {
                 "id": fake.random_int(min=1, max=999999),
-                "old_status": "TEST",
-                "new_status": "PENDING",
+                "old_status": fake.status(),
+                "new_status": fake.status(),
                 "reason": fake.sentence()
             }
         return {}
