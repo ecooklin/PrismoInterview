@@ -1,4 +1,4 @@
 [MASTER]
 init-hook='import sys; sys.path.append("src")'
 
-disable=line-too-long,too-many-instance-attributes
+disable=line-too-long,redefined-outer-name,too-many-arguments,too-many-instance-attributes

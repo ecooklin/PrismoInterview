@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 from datetime import datetime
+from typing import List
 
 from pyspark.sql import DataFrame,SparkSession
 from pyspark.sql.functions import col, to_date
@@ -37,6 +38,10 @@ class EventLoader(SparkUtils):
         """Filter the input df for the given date"""
         return df.filter(to_date(col(timestamp_col)) == date)
 
+    def get_distinct_dates(self, df: DataFrame) -> List[str]:
+        """Grabs all of the distinct dates in df"""
+        return df.select(to_date(col("timestamp")).alias("date")).distinct().collect()
+
     def get_schema(self, domain: str) -> StructType:
         """Returns the appropriate flat schema for the provided domain"""
         es = EventSchemas()
@@ -48,7 +53,7 @@ class EventLoader(SparkUtils):
         return StructType()
 
     def read_events(self, path: str, domain: str = None, event_type: str = None) -> DataFrame:
-        """Reads JSON file from the provided path"""
+        """Reads JSON file from the provided path and returns a DataFrame filtered by domain and event_type"""
         logger.info("Reading data from path: %s", path)
         if event_type:
             return self.spark.read.json(path).filter((col("event_type") == event_type) & (col("domain") == domain))
@@ -59,29 +64,74 @@ class EventLoader(SparkUtils):
         logger.info("Writing parquet data to: %s", path)
         df.write.mode("overwrite").parquet(path=path)
 
+    def load_events(self,
+                    df: DataFrame,
+                    event_type: str,
+                    date: str,
+                    schema: StructType,
+                    base_path: str
+                    ) -> None:
+        """
+        Loads events to the path
+
+        Args:
+            df (DataFrame): Input DataFrame
+            date (str): Date string YYYY-MM-DD format
+            schema (str): The flattened df schema
+            base_path (str): Base path to write to. 
+        """
+        date_df = self.filter_date(df, date=date, timestamp_col="timestamp")
+        flat_df = self.flatten_df(date_df)
+        final_df = self.cast_and_select(flat_df, schema)
+        date_path = os.path.join(base_path, self.create_date_path(date), event_type)
+        self.write_event_dataframe(final_df, date_path)
+
+    def backfill_events(self,
+                        df: DataFrame,
+                        event_type: str,
+                        dates: List[str],
+                        schema: StructType,
+                        base_path: str
+                        ) -> None:
+        """
+        Takes in a super df of event data, flattens it, applies a schema, and writes it partitioned by date to the provided path.
+
+        Args:
+            df (DataFrame): Input DataFrame
+            date (str): Date string YYYY-MM-DD format
+            schema (str): The flattened df schema
+            base_path (str): Base path to write to. 
+        """
+        for date in dates:
+            date_str = date["date"].strftime("%Y-%m-%d")
+            date_df = self.filter_date(df, date=date_str, timestamp_col="timestamp")
+            flat_df = self.flatten_df(date_df)
+            final_df = self.cast_and_select(flat_df, schema)
+            date_path = os.path.join(base_path, self.create_date_path(date_str), event_type)
+            self.write_event_dataframe(final_df, date_path)
+
 
 if __name__ == "__main__":
     parser  = argparse.ArgumentParser()
     parser.add_argument("-s", "--source-file", type=str, help="Source Events filename", required=True)
-    parser.add_argument("-t", "--target-path", type=str, help="Target path for writing parquets", default=None, required=False)
+    parser.add_argument("-t", "--target-path", type=str, help="Target path for writing parquets", default=None, required=True)
     parser.add_argument("-do", "--domain", type=str, help="Which Domain to load", required=True)
     parser.add_argument("-e", "--event-type", type=str, help="Which event type to load", required=True)
     parser.add_argument("-f", "--flatten", type=bool, help="If you want to flatten nested struct fields or not.", default=True, required=False)
     parser.add_argument("-d", "--date", type=str, help="Date to load. Expects YYYY-MM-DD representation", required=False)
+    parser.add_argument("-b", "--backfill", action="store_true", help="Backfill ALL events from the source-file and overwrite the data in target-path", required=False)
     flags = parser.parse_args()
-    print(flags)
+    logger.debug(flags)
 
     e = EventLoader()
     df = e.read_events(path=flags.source_file, domain=flags.domain, event_type=flags.event_type)
-    date_df = e.filter_date(df, flags.date, "timestamp")
-    if flags.flatten:
-        schema = e.get_schema(flags.domain)
-        flat_df = e.flatten_df(date_df)
-        final_df = e.cast_and_select(flat_df, schema)
-        final_df.printSchema()
-        final_df.show()
+    schema = e.get_schema(flags.domain)
+
+    if flags.backfill:
+        logger.info("Backfilling Event Data for evemt type: %s", flags.event_type)
+        dates = e.get_distinct_dates(df)
+        logger.info("Full dates list %s", dates)
+        e.backfill_events(df, flags.event_type, dates, schema, flags.target_path)
     else:
-        final_df = df
-    if flags.target_path:
-        path = os.path.join(flags.target_path, e.create_date_path(flags.date), flags.event_type)
-        e.write_event_dataframe(final_df, path=path)
+        logger.info("Loading event data")
+        e.load_events(df, flags.event_type, flags.date, schema, flags.target_path)

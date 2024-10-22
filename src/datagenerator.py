@@ -11,11 +11,13 @@ from faker.providers import DynamicProvider
 
 from models.event import Event
 
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
 )
 logger = logging.getLogger(__name__)
+
 
 class DataGenerator:
     """
@@ -23,13 +25,9 @@ class DataGenerator:
 
     Attributes:
         seed (int): The seed to use for Faker - default 0
-        num_data_points (int): Number of data points to generate
     """
-    def __init__(self, seed: int, base_path: str, start_date: str, num_events: int = 10):
+    def __init__(self, seed: int):
         self.seed = seed
-        self.num_events = num_events
-        self.base_path = base_path
-        self.start_date = start_date
         self.out = []
         self.domain_provider = DynamicProvider(
             provider_name="domain",
@@ -49,11 +47,17 @@ class DataGenerator:
         self.fake.add_provider(self.account_provider)
         self.fake.add_provider(self.transaction_provider)
 
-    def generate_data(self) -> None:
-        """Main function to generate faked data"""
+    def generate_data(self, start_date: str, num_events: int) -> None:
+        """
+        Main function to generate faked data
+
+        Args:
+            start_date (str): Which date to start generating from
+            num_events (int): How many data points to generate
+        """
         logger.info("Generating data")
-        time = datetime.strptime(self.start_date, "%Y-%m-%d").date()
-        for _ in range(self.num_events):
+        time = datetime.strptime(start_date, "%Y-%m-%d").date()
+        for _ in range(num_events):
             domain = self.fake.domain()
             if domain=="account":
                 event_type=self.fake.account()
@@ -71,13 +75,13 @@ class DataGenerator:
             self.out.append(e.__dict__)
             time = time + timedelta(seconds=self.fake.random_int(min=1,max=120))
 
-    def write_data(self) -> None:
+    def write_data(self, base_path: str) -> None:
         """Checks for the base path and writes the array of events to a file"""
         logger.info("Writing Data")
-        logger.debug(self.base_path)
+        logger.debug(base_path)
         try:
-            os.makedirs(os.path.dirname(self.base_path), exist_ok=True)
-            file = os.path.join(self.base_path, "events.json")
+            os.makedirs(os.path.dirname(base_path), exist_ok=True)
+            file = os.path.join(base_path, "events.json")
             with open(file, mode="w", encoding="utf-8") as f:
                 f.write("\n".join(map(json.dumps, self.out)))
         except IOError as e:
@@ -94,12 +98,9 @@ if __name__ == "__main__":
     flags = parser.parse_args()
     logger.debug(flags)
 
-    data_generator = DataGenerator(seed=flags.seed,
-                                   base_path=flags.base_path,
-                                   start_date=flags.start_date,
-                                   num_events=flags.num_events
-                                )
-    data_generator.generate_data()
+    data_generator = DataGenerator(seed=flags.seed)
+    data_generator.generate_data(flags.start_date, flags.num_events)
+
     logger.debug(flags.write_data, type(flags.write_data))
     if flags.write_data:
-        data_generator.write_data()
+        data_generator.write_data(flags.base_path)
