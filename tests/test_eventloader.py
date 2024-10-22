@@ -2,11 +2,11 @@
 
 import unittest
 
-from models.event_schemas import EventSchemas
-
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.types import StructType
 from src.eventloader import EventLoader
+
+from models.event_schemas import EventSchemas
 
 
 class TestEventLoader(unittest.TestCase):
@@ -68,7 +68,6 @@ class TestEventLoader(unittest.TestCase):
         flat_df = self.event_loader.flatten_df(df)
         final_df = self.event_loader.cast_and_select(flat_df, schema)
         self.assertEqual(final_df.schema, schema)
-
 
 
 if __name__ == '__main__':
