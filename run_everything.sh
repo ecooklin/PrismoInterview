@@ -1,7 +1,7 @@
 #! /bin/bash
 
-python -m venv venv
-export PATH="$(pwd)/venv/bin:$PATH"
+python3.11 -m venv venv
+source venv/bin/activate
 python -m pip install -r requirements.txt
 
 python $(pwd)/src/datagenerator.py --seed 123 --num-events 10000 --base-path data/raw_events/ --write-data
