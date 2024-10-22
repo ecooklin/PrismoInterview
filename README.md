@@ -41,7 +41,7 @@ chmod +x run_everything.sh
 
 ### 1. To run the `DataGenerator`:
 ```
-python src/datagenerator.py --seed 123 --num_events 10000 --base-path data/raw_events/ --write-data
+python src/datagenerator.py --seed 123 --num-events 10000 --base-path data/raw_events/ --write-data
 ```
 
 Arguments:
