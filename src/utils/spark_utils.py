@@ -3,8 +3,9 @@
 from dataclasses import dataclass
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, desc, row_number
 from pyspark.sql.types import StructType
+from pyspark.sql.window import Window
 
 @dataclass
 class SparkUtils:
@@ -55,3 +56,19 @@ class SparkUtils:
             if field.name in df.columns:
                 df = df.withColumn(field.name, df[field.name].cast(field.dataType))
         return df.select(*schema_cols)
+
+    def dedupe_events(self, df: DataFrame) -> DataFrame:
+        """
+        Deduplicate events by keeping the latest event for each event_id.
+
+        Args:
+            df (DataFrame): Input DataFrame containing events.
+
+        Returns:
+            DataFrame: Deduplicated DataFrame containing only the latest events per event_id.
+        """
+        window_spec = Window.partitionBy("event_id").orderBy(desc("timestamp"))
+        rn_df = df.withColumn("row_number", row_number().over(window_spec))
+        dedupe_df = rn_df.filter(col("row_number") == 1).drop("row_number")
+
+        return dedupe_df

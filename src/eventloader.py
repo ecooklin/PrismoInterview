@@ -82,7 +82,8 @@ class EventLoader(SparkUtils):
         """
         date_df = self.filter_date(df, date=date, timestamp_col="timestamp")
         flat_df = self.flatten_df(date_df)
-        final_df = self.cast_and_select(flat_df, schema)
+        cast_df = self.cast_and_select(flat_df, schema)
+        final_df = self.dedupe_events(cast_df)
         date_path = os.path.join(base_path, self.create_date_path(date), event_type)
         self.write_event_dataframe(final_df, date_path)
 
@@ -103,10 +104,12 @@ class EventLoader(SparkUtils):
             base_path (str): Base path to write to. 
         """
         for date in dates:
+            logger.info(date_str)
             date_str = date["date"].strftime("%Y-%m-%d")
             date_df = self.filter_date(df, date=date_str, timestamp_col="timestamp")
             flat_df = self.flatten_df(date_df)
-            final_df = self.cast_and_select(flat_df, schema)
+            cast_df = self.cast_and_select(flat_df, schema)
+            final_df = self.dedupe_events(cast_df)
             date_path = os.path.join(base_path, self.create_date_path(date_str), event_type)
             self.write_event_dataframe(final_df, date_path)
 

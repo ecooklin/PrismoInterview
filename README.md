@@ -5,12 +5,29 @@ My data pipeline simulation for Prismo
 ## Table of Contents
 
 ## Environment Setup
+This was written and tested on a 2021 M1 MacbookPro using:
+- Python 3.11.2
+- Apache Spark 3.5.0
+- PySpark 3.5.2
+
+For MacOS:
+```
+brew install python@3.11
+brew install apache-spark
+
+git clone https://github.com/ecooklin/PrismoInterview.git
+
+cd PrismoInterview
+python3.11 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+```
 
 ## Usage
 
 ### 1. To run the `DataGenerator`:
 ```
-python src/datagenerator.py --seed 123 --num_events 100 --base-path data/raw_events/ --write-data
+python src/datagenerator.py --seed 123 --num_events 10000 --base-path data/raw_events/ --write-data
 ```
 
 Arguments:
@@ -28,7 +45,7 @@ Arguments:
 - `--source-file`: Path to the source JSON file containing the events.
 - `--target-path`: Directory to write the transformed parquet files.
 - `--domain`: The domain of events to load (ex `account` or `transaction`).
-- `--event-type`: The type of event to filter on (e.g., `account-open`).
+- `--event-type`: The type of event to filter on (e.g., `account-open`, `account-close`, `status-change`, `payment-to`, `payment-from`).
 - `--date`: The specific date (`YYYY-MM-DD`) to filter the event data.
 - `--backfill`: (Optional) Load EVERYTHING from the `source-file` to the `target-path`
 
@@ -65,12 +82,15 @@ Important Technical Notes
     2. Filter the events for a specified `domain` and `event-type`
     3. Filter all the events for the `target-date` given
     4. Flatten any nested struct columns and cast the dataframe according to an event schema in `src.models.event_schemas`
-    5. Write the resulting dataframe to a specified directory
+    5. Dedupe the Events by a row_number windowing over the `event_id` in desc order and only taking the first one
+    6. Write the resulting dataframe to a specified directory
 
     #### Thoughts: 
     I designed the `EventLoader` imagining a batch loading process on a daily cadence. As the prompt says that we are ingesting a file and writing the file to parquet partitioned by the date in the timestamp. While the `spark-submit` command is verbose, this gives us fine control over the behavior of the `EventLoader`.
 
     For simplicity, I assume that we can specify and filter for the specific `domain` and `event-type` as this will allow us to apply a specific schema to each event type. I chose to flatten any nested structures to take advantage of the column level power of parquet format.
+
+    The dedupe method is a costly but effective method of only returning the latest version of a given event_id. Since this is a UUID it must be unique, so it gives us a good variable to partition by.
 
     If we wanted to change this to an hourly ingestion, we will need to change the `mode` to `append` unless its in `backfill` mode.
 

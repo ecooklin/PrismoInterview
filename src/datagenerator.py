@@ -56,7 +56,7 @@ class DataGenerator:
             num_events (int): How many data points to generate
         """
         logger.info("Generating data")
-        time = datetime.strptime(start_date, "%Y-%m-%d").date()
+        time = datetime.strptime(start_date, "%Y-%m-%d")
         for _ in range(num_events):
             domain = self.fake.domain()
             if domain=="account":
