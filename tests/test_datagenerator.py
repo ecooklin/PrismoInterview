@@ -9,13 +9,13 @@ class TestDataGenerator(unittest.TestCase):
     """Unit Tests"""
     def setUp(self):
         """Set up the various generators before each test"""
-        self.data_gen = DataGenerator(seed=10, base_path="data/raw_events/",start_date="2024-10-10", num_events=10)
+        self.data_gen = DataGenerator(seed=10)
         self.account_gen = AccountDataGenerator()
         self.transaction_gen = TransactionDataGenerator()
 
     def test_generate_events(self):
         """Test basic event generation"""
-        self.data_gen.generate_data()
+        self.data_gen.generate_data("2024-10-10", 10)
         self.assertEqual(len(self.data_gen.out), 10)
 
     def test_generate_account_data(self):
@@ -43,6 +43,8 @@ class TestDataGenerator(unittest.TestCase):
         """Test the generation of the data object for transaction domain events"""
         data = self.transaction_gen.generate_transaction_data("payment-to")
         self.assertIn("id", data)
+        self.assertIn("to", data)
+        self.assertIn("from", data)
         self.assertIn("amount", data)
 
 

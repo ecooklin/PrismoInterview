@@ -52,9 +52,7 @@ class TestEventLoader(unittest.TestCase):
         df = self.event_loader.read_events(path="tests/test_events.json", domain="account", event_type="account-open")
         self.assertEqual(df.count(), 1)
 
-    def test_apply_account_schema(self):
-        """test applying the account schema to events"""
-        df = self.event_loader.read_events(path="tests/test_events.json", domain="account", event_type="account-open")
+        # Test applying account schema
         schema = EventSchemas.get_account_schema()
         flat_df = self.event_loader.flatten_df(df)
         final_df = self.event_loader.cast_and_select(flat_df, schema)
@@ -65,9 +63,7 @@ class TestEventLoader(unittest.TestCase):
         df = self.event_loader.read_events(path="tests/test_events.json", domain="transaction", event_type="payment-to")
         self.assertEqual(df.count(), 1)
 
-    def test_apply_transaction_schema(self):
-        """test applying the Transaction schema to events"""
-        df = self.event_loader.read_events(path="tests/test_events.json", domain="transaction", event_type="payment-from")
+        # Test applying transaction schema
         schema = EventSchemas.get_transaction_schema()
         flat_df = self.event_loader.flatten_df(df)
         final_df = self.event_loader.cast_and_select(flat_df, schema)
