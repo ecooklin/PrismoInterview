@@ -49,7 +49,7 @@ class EventLoader(SparkUtils):
         if domain == "account":
             return es.get_account_schema()
         if domain == "transaction":
-            return es.get_transaction_schema
+            return es.get_transaction_schema()
         return StructType()
 
     def read_events(self, path: str, domain: str = None, event_type: str = None) -> DataFrame:
@@ -104,8 +104,8 @@ class EventLoader(SparkUtils):
             base_path (str): Base path to write to. 
         """
         for date in dates:
-            logger.info(date_str)
             date_str = date["date"].strftime("%Y-%m-%d")
+            logger.info(date_str)
             date_df = self.filter_date(df, date=date_str, timestamp_col="timestamp")
             flat_df = self.flatten_df(date_df)
             cast_df = self.cast_and_select(flat_df, schema)
@@ -129,6 +129,7 @@ if __name__ == "__main__":
     e = EventLoader()
     df = e.read_events(path=flags.source_file, domain=flags.domain, event_type=flags.event_type)
     schema = e.get_schema(flags.domain)
+    logger.debug(schema)
 
     if flags.backfill:
         logger.info("Backfilling Event Data for evemt type: %s", flags.event_type)

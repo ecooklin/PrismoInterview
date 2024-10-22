@@ -58,6 +58,20 @@ class TestEventLoader(unittest.TestCase):
         final_df = self.event_loader.cast_and_select(flat_df, schema)
         self.assertEqual(final_df.schema, schema)
 
+    def test_dedupe_account_events(self):
+        """Test deduplication of account-close events"""
+        df = self.event_loader.read_events(path="tests/test_events.json", domain="account", event_type="account-close")
+        self.assertEqual(df.count(), 2) # defined in the test_events.json
+
+        schema = EventSchemas.get_account_schema()
+        flat_df = self.event_loader.flatten_df(df)
+        cast_df = self.event_loader.cast_and_select(flat_df, schema)
+        final_df = self.event_loader.dedupe_events(cast_df)
+        test_timestamp_list = final_df.select("timestamp").collect()
+        test_timestamp = test_timestamp_list[0]['timestamp'].isoformat()
+        self.assertEqual(final_df.count(), 1)
+        self.assertEqual(test_timestamp, "2024-10-10T10:13:59")
+
     def test_read_transaction_events(self):
         """Test reading Transaction events"""
         df = self.event_loader.read_events(path="tests/test_events.json", domain="transaction", event_type="payment-to")
